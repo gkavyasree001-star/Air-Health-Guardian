@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Air Health Guardian</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .config-box { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #34495e; color: white; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #ddd; }
+        .status-alert { background: #e74c3c; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+        .status-safe { background: #27ae60; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Indoor Air Health Guardian</h1>
+
+        <div class="config-box">
+            <h3>Threshold Configuration</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <label>Temp Limit:</label>
+                <input type="number" name="temp_limit" value="{{ config.temp_limit }}" step="0.1" required>
+                <label>Humidity Limit:</label>
+                <input type="number" name="hum_limit" value="{{ config.hum_limit }}" step="0.1" required>
+                <button type="submit">Update</button>
+            </form>
+        </div>
+
+        <div style="width: 100%; height: 300px;">
+            <canvas id="sensorChart"></canvas>
+        </div>
+
+        <table>
+            <tr><th>Status</th><th>Temp (°C)</th><th>Humidity (%)</th><th>Chemical</th><th>Time</th></tr>
+            {% for entry in data %}
+            <tr>
+                <td>
+                    <span class="{% if entry.status == 'ALERT' %}status-alert{% else %}status-safe{% endif %}">
+                        {{ entry.status }}
+                    </span>
+                </td>
+                <td>{{ entry.temp }}</td>
+                <td>{{ entry.humidity }}</td>
+                <td>{{ entry.chemical }}</td>
+                <td>{{ entry.time|date:"H:i:s" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <script>
+        // Auto-refresh every 3 seconds
+        setTimeout(function(){ location.reload(); }, 3000);
+
+        // Chart.js Data
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [{% for entry in data reversed %}'{{ entry.time|date:"H:i:s" }}',{% endfor %}],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [{% for entry in data reversed %}{{ entry.temp }},{% endfor %}],
+                    borderColor: '#3498db',
+                    tension: 0.1
+                }]
+            }
+        });
+    </script>
+</body>
+</html>
